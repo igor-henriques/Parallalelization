@@ -3,9 +3,9 @@ using System.Diagnostics;
 
 using var httpClient = new HttpClient();
 
-int parallelSize = 5;
+int parallelSize = 2;
 
-var collection = Enumerable.Range(0, 100).Select(i => new string("https://www.google.com"));
+var collection = Enumerable.Range(0, 21).Select(i => new string("https://www.google.com"));
 
 var sw = Stopwatch.StartNew();
 

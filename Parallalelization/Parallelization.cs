@@ -13,6 +13,8 @@
         /// <returns></returns>
         public static async Task ParallelizeAsync<T>(this IEnumerable<T> collection, int parallelSize, Func<T, Task> callback, bool descriptiveOperations = false)
         {
+            if (!collection.Any()) return;
+
             Validate(collection, parallelSize, callback);
 
             var loopTaskList = new List<Task>();
@@ -24,9 +26,11 @@
 
                 var currentLoop = collection
                     .Skip(i * collection.Count() / parallelSize)
-                    .Take(collection.Count() / parallelSize)
+                    .Take(GetTakeCount(collection.Count(), parallelSize))
                     .Select(task => new { Task = task, Pod = i })
                     .ToList();
+
+                if (currentLoop.Count <= 0) continue;
 
                 var loopTask = Task.Run(async () =>
                 {
@@ -59,6 +63,8 @@
         /// <returns></returns>
         public static void Parallelize<T>(this IEnumerable<T> collection, int parallelSize, Func<T, Task> callback, bool descriptiveOperations = false)
         {
+            if (!collection.Any()) return;
+
             Validate(collection, parallelSize, callback);
 
             var loopTaskList = new List<Task>();
@@ -70,9 +76,11 @@
 
                 var currentLoop = collection
                     .Skip(i * collection.Count() / parallelSize)
-                    .Take(collection.Count() / parallelSize)
+                    .Take(GetTakeCount(collection.Count(), parallelSize))
                     .Select(task => new { Task = task, Pod = i })
                     .ToList();
+
+                if (currentLoop.Count <= 0) continue;
 
                 var loopTask = Task.Run(async () =>
                 {
@@ -94,9 +102,14 @@
             Task.WaitAll(loopTaskList.ToArray());
         }
 
+        private static int GetTakeCount(int collectionCount, int parallelSize)
+        {
+            return ((double)collectionCount / (double)parallelSize) % 1 > 0 ? (int)Math.Ceiling(Convert.ToDouble(collectionCount) / Convert.ToDouble(parallelSize)) : collectionCount / parallelSize;
+        }
+
         private static void Validate<T>(IEnumerable<T> collection, int parallelSize, Func<T, Task> callback)
         {
-            List<string> errors = new();
+            var errors = new List<string>();
 
             if (collection == null)
                 errors.Add("Collection can't be null");
